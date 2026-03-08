@@ -78,4 +78,15 @@ public class TopicoController {
                 .status(404)
                 .body("Error: No se encontró un tópico con ID " + id));
     }
+
+    // === Eliminar un tópico por ID ===
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> eliminarTopico(@PathVariable Long id) {
+        return topicoRepository.findById(id).map(topico -> {
+            topicoRepository.deleteById(id);
+            return ResponseEntity.ok("Tópico con ID " + id + " eliminado correctamente");
+        }).orElseGet(() -> ResponseEntity
+                .status(404)
+                .body("Error: No se encontró un tópico con ID " + id));
+    }
 }
