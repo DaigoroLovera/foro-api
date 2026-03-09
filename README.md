@@ -160,6 +160,5 @@ La API utiliza:
 
 # Autor
 
-Proyecto desarrollado como parte de la formación en backend con Java.
-
+Daigoro Lovera
 ---
