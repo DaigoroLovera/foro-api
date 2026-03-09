@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Optional;
 
 import com.alura.foro.model.Topico;
 import com.alura.foro.repository.TopicoRepository;
@@ -41,52 +42,53 @@ public class TopicoController {
     // === Detalle de un tópico por ID ===
     @GetMapping("/{id}")
     public ResponseEntity<?> obtenerTopico(@PathVariable Long id) {
-        return topicoRepository.findById(id)
-                .map(topico -> ResponseEntity.ok(topico))
-                .orElseGet(() -> ResponseEntity
-                        .status(404)
-                        .body("Error: No se encontró un tópico con ID " + id));
+        Optional<Topico> topico = topicoRepository.findById(id);
+        if (topico.isEmpty()) {
+            return ResponseEntity.status(404).body("Error: No se encontró un tópico con ID " + id);
+        }
+        return ResponseEntity.ok(topico.get());
     }
 
     // === Actualizar un tópico por ID ===
     @PutMapping("/{id}")
     public ResponseEntity<?> actualizarTopico(@PathVariable Long id, @RequestBody @Valid Topico topicoActualizado) {
 
-        // Buscar el tópico en la base de datos
-        return topicoRepository.findById(id).map(topico -> {
+        Optional<Topico> optTopico = topicoRepository.findById(id);
+        if (optTopico.isEmpty()) {
+            return ResponseEntity.status(404).body("Error: No se encontró un tópico con ID " + id);
+        }
 
-            // Validar duplicados (exceptuando el mismo ID)
-            if (topicoRepository.existsByTituloAndMensaje(topicoActualizado.getTitulo(), topicoActualizado.getMensaje())
-                    && !(topico.getTitulo().equals(topicoActualizado.getTitulo())
-                    && topico.getMensaje().equals(topicoActualizado.getMensaje()))) {
-                return ResponseEntity
-                        .badRequest()
-                        .body("Error: Ya existe un tópico con el mismo título y mensaje");
-            }
+        Topico topico = optTopico.get();
 
-            // Actualizar los campos
-            topico.setTitulo(topicoActualizado.getTitulo());
-            topico.setMensaje(topicoActualizado.getMensaje());
-            topico.setAutor(topicoActualizado.getAutor());
-            topico.setCurso(topicoActualizado.getCurso());
-            topico.setEstado(topicoActualizado.getEstado());
+        // Validar duplicados (exceptuando el mismo ID)
+        boolean duplicado = topicoRepository.existsByTituloAndMensaje(topicoActualizado.getTitulo(), topicoActualizado.getMensaje())
+                && !(topico.getTitulo().equals(topicoActualizado.getTitulo())
+                && topico.getMensaje().equals(topicoActualizado.getMensaje()));
 
-            Topico guardado = topicoRepository.save(topico);
-            return ResponseEntity.ok(guardado);
+        if (duplicado) {
+            return ResponseEntity.badRequest().body("Error: Ya existe un tópico con el mismo título y mensaje");
+        }
 
-        }).orElseGet(() -> ResponseEntity
-                .status(404)
-                .body("Error: No se encontró un tópico con ID " + id));
+        // Actualizar campos
+        topico.setTitulo(topicoActualizado.getTitulo());
+        topico.setMensaje(topicoActualizado.getMensaje());
+        topico.setAutor(topicoActualizado.getAutor());
+        topico.setCurso(topicoActualizado.getCurso());
+        topico.setEstado(topicoActualizado.getEstado());
+
+        Topico guardado = topicoRepository.save(topico);
+        return ResponseEntity.ok(guardado);
     }
 
     // === Eliminar un tópico por ID ===
     @DeleteMapping("/{id}")
     public ResponseEntity<?> eliminarTopico(@PathVariable Long id) {
-        return topicoRepository.findById(id).map(topico -> {
-            topicoRepository.deleteById(id);
-            return ResponseEntity.ok("Tópico con ID " + id + " eliminado correctamente");
-        }).orElseGet(() -> ResponseEntity
-                .status(404)
-                .body("Error: No se encontró un tópico con ID " + id));
+        Optional<Topico> optTopico = topicoRepository.findById(id);
+        if (optTopico.isEmpty()) {
+            return ResponseEntity.status(404).body("Error: No se encontró un tópico con ID " + id);
+        }
+
+        topicoRepository.deleteById(id);
+        return ResponseEntity.ok("Tópico con ID " + id + " eliminado correctamente");
     }
 }
